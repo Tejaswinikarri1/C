@@ -1,0 +1,85 @@
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+
+#define MAX_RULES 10
+#define MAX_LEN 10
+
+char rules[MAX_RULES][MAX_LEN];  // Stores grammar rules
+char firstSets[MAX_RULES][MAX_LEN];  // Stores FIRST sets
+int numRules;
+
+// Function to check if a symbol is a terminal
+int isTerminal(char symbol) {
+    return !isupper(symbol);  // Terminals are lowercase or special symbols
+}
+
+// Function to compute FIRST set
+void computeFirst(char first[], char symbol) {
+    if (isTerminal(symbol)) {
+        strncat(first, &symbol, 1);  // Add terminal to FIRST
+        return;
+    }
+
+    for (int i = 0; i < numRules; i++) {
+        if (rules[i][0] == symbol) { // Rule X → something
+            for (int j = 2; rules[i][j] != '\0'; j++) {
+                char nextSymbol = rules[i][j];
+
+                if (isTerminal(nextSymbol)) {
+                    strncat(first, &nextSymbol, 1);
+                    break;
+                } else {
+                    char temp[MAX_LEN] = "";
+                    computeFirst(temp, nextSymbol);
+                    
+                    for (int k = 0; k < strlen(temp); k++) {
+                        if (temp[k] != 'ε')
+                            strncat(first, &temp[k], 1);
+                    }
+
+                    if (strchr(temp, 'ε') == NULL)
+                        break;
+
+                    if (rules[i][j + 1] == '\0')
+                        strncat(first, "ε", 1);
+                }
+            }
+        }
+    }
+}
+
+// Function to display FIRST sets
+void displayFirstSets() {
+    for (int i = 0; i < numRules; i++) {
+        char nonTerminal = rules[i][0];
+        if (strchr(firstSets[i], nonTerminal) == NULL) { 
+            char first[MAX_LEN] = "";
+            computeFirst(first, nonTerminal);
+            strcpy(firstSets[i], first);
+            printf("FIRST(%c) = { ", nonTerminal);
+            for (int j = 0; j < strlen(firstSets[i]); j++) {
+                printf("%c ", firstSets[i][j]);
+            }
+            printf("}\n");
+        }
+    }
+}
+
+// Main function
+int main() {
+    printf("Enter the number of productions: ");
+    scanf("%d", &numRules);
+    getchar();  // Consume newline
+
+    printf("Enter the productions (Format: A->BC, A->a, etc.):\n");
+    for (int i = 0; i < numRules; i++) {
+        fgets(rules[i], MAX_LEN, stdin);
+        rules[i][strcspn(rules[i], "\n")] = '\0';  // Remove newline
+    }
+
+    printf("\nFIRST Sets:\n");
+    displayFirstSets();
+
+    return 0;
+}
